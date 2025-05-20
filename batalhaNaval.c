@@ -1,70 +1,66 @@
 #include <stdio.h>
 
-#define TAMANHO 10        // Tamanho fixo do tabuleiro 10x10
-#define TAMANHO_NAVIO 3   // Cada navio ocupa 3 posições
-#define AGUA 0
-#define NAVIO 3
+#define TAB_SIZE 10
 
-int main() {
-    int tabuleiro[TAMANHO][TAMANHO];
-
-    // Inicializa todo o tabuleiro com 0 (água)
-    for (int i = 0; i < TAMANHO; i++) {
-        for (int j = 0; j < TAMANHO; j++) {
-            tabuleiro[i][j] = AGUA;
+// Função para inicializar o tabuleiro com água (0)
+void inicializarTabuleiro(int tabuleiro[TAB_SIZE][TAB_SIZE]) {
+    for(int i=0; i<TAB_SIZE; i++) {
+        for(int j=0; j<TAB_SIZE; j++) {
+            tabuleiro[i][j] = 0;
         }
     }
-
-    // === NAVIO HORIZONTAL ===
-    int navioH[TAMANHO_NAVIO] = {NAVIO, NAVIO, NAVIO};
-
-    int linhaH = 2;    // Linha onde o navio horizontal começará
-    int colunaH = 4;   // Coluna inicial do navio horizontal
-
-    // Verifica se cabe no tabuleiro (horizontal)
-    if (colunaH + TAMANHO_NAVIO <= TAMANHO) {
-        for (int i = 0; i < TAMANHO_NAVIO; i++) {
-            // Verifica se já existe outro navio na posição
-            if (tabuleiro[linhaH][colunaH + i] != AGUA) {
-                printf("Erro: Sobreposição detectada para navio horizontal!\n");
-                return 1;
-            }
-            tabuleiro[linhaH][colunaH + i] = navioH[i];
-        }
-    } else {
-        printf("Erro: Navio horizontal ultrapassa os limites do tabuleiro.\n");
-        return 1;
-    }
-
-    // === NAVIO VERTICAL ===
-    int navioV[TAMANHO_NAVIO] = {NAVIO, NAVIO, NAVIO};
-
-    int linhaV = 5;   // Linha inicial do navio vertical
-    int colunaV = 7;  // Coluna onde o navio vertical será posicionado
-
-    // Verifica se cabe no tabuleiro (vertical)
-    if (linhaV + TAMANHO_NAVIO <= TAMANHO) {
-        for (int i = 0; i < TAMANHO_NAVIO; i++) {
-            if (tabuleiro[linhaV + i][colunaV] != AGUA) {
-                printf("Erro: Sobreposição detectada para navio vertical!\n");
-                return 1;
-            }
-            tabuleiro[linhaV + i][colunaV] = navioV[i];
-        }
-    } else {
-        printf("Erro: Navio vertical ultrapassa os limites do tabuleiro.\n");
-        return 1;
-    }
-
-    // === EXIBIÇÃO DO TABULEIRO ===
-    printf("\nTabuleiro final:\n\n");
-
-    for (int i = 0; i < TAMANHO; i++) {
-        for (int j = 0; j < TAMANHO; j++) {
-            printf("%d ", tabuleiro[i][j]);
-        }
-        printf("\n");
-    }
-
-    return 0;
 }
+
+// Função para verificar se uma posição está dentro dos limites do tabuleiro
+int estaDentro(int linha, int coluna) {
+    return (linha >= 0 && linha < TAB_SIZE && coluna >= 0 && coluna < TAB_SIZE);
+}
+
+// Função para verificar sobreposição de navios
+int podePosicionar(int tabuleiro[TAB_SIZE][TAB_SIZE], int linha, int coluna) {
+    return estaDentro(linha, coluna) && (tabuleiro[linha][coluna] == 0);
+}
+
+// Posiciona um navio ortogonal (horizontal ou vertical) de tamanho 3
+int posicionarNavioOrtogonal(int tabuleiro[TAB_SIZE][TAB_SIZE], int linha, int coluna, int horizontal) {
+    // horizontal = 1 -> horizontal; 0 -> vertical
+    for(int k=0; k<3; k++) {
+        int r = linha + (horizontal ? 0 : k);
+        int c = coluna + (horizontal ? k : 0);
+        if (!podePosicionar(tabuleiro, r, c)) {
+            return 0; // não pode posicionar, sobreposição ou fora do tabuleiro
+        }
+    }
+    for(int k=0; k<3; k++) {
+        int r = linha + (horizontal ? 0 : k);
+        int c = coluna + (horizontal ? k : 0);
+        tabuleiro[r][c] = 3;
+    }
+    return 1;
+}
+
+// Posiciona um navio diagonal (tamanho 3) - diagonal principal ou secundária
+int posicionarNavioDiagonal(int tabuleiro[TAB_SIZE][TAB_SIZE], int linha, int coluna, int diagonalPrincipal) {
+    // diagonalPrincipal = 1 -> linha e coluna aumentam juntos ( \ )
+    // diagonalPrincipal = 0 -> linha aumenta e coluna diminui ( / )
+    for(int k=0; k<3; k++) {
+        int r = linha + k;
+        int c = diagonalPrincipal ? coluna + k : coluna - k;
+        if (!podePosicionar(tabuleiro, r, c)) {
+            return 0; // inválido
+        }
+    }
+    for(int k=0; k<3; k++) {
+        int r = linha + k;
+        int c = diagonalPrincipal ? coluna + k : coluna - k;
+        tabuleiro[r][c] = 3;
+    }
+    return 1;
+}
+
+// Cria a matriz de habilidade cone 7x7
+void criarMatrizCone(int cone[7][7]) {
+    /*
+    Formato do cone (1 = área de efeito):
+    Linha 0:        0 0 0 1 0 0 0
+    Li
